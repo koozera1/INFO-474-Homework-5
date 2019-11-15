@@ -1,0 +1,102 @@
+<html>
+<head>
+  <title>A D3 map</title>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="neighborhoods.js"></script>
+  <script src="points.js"></script>
+  <style>
+    #neighborhoods path{
+      fill: #ccc;
+    }
+    #point path{
+      fill: #900;
+      stroke: #999;
+    }
+    #point path:hover{
+      fill: black;
+    }
+  </style>
+</head>
+<body>
+    <h1>Week 7: Maps</h1>
+    <h3>Map of Boston</h3>
+  <script>
+var width = 700,
+    height = 580;
+
+var svg = d3.select( "body" )
+  .append( "svg" )
+  .attr( "width", width )
+  .attr( "height", height );
+
+var neighborhoods = svg.append( "g" ).attr( "id", "neighborhoods" );
+
+var albersProjection = d3.geoAlbers()
+  .scale( 190000 )
+  .rotate( [71.057,0] )
+  .center( [0, 42.313] )
+  .translate( [width/2,height/2] );
+
+
+var geoPath = d3.geoPath()
+    .projection( albersProjection );
+
+neighborhoods.selectAll( "path" )
+  .data( neighborhoods_json.features )
+  .enter()
+  .append( "path" )
+  .attr( "d", geoPath );
+
+var points = svg.append( "g" ).attr( "id", "point" );
+
+points.selectAll( "path" )
+  .data( points_json.features )
+  .enter()
+  .append( "path" )
+  .attr( "d", geoPath )
+
+  let links = [];
+  for (let i = 0; i < points_json.features.length - 1; i++) {
+    const start = albersProjection(points_json.features[i].geometry.coordinates)
+    const end = albersProjection(points_json.features[i + 1].geometry.coordinates)
+    links.push({
+      type: "lineString",
+      coordinates: [
+        [start[0], start[1]],
+        [end[0], end[1]]
+      ]
+    })
+  }
+
+  console.log(links)
+  let lines = svg.append('g');
+  lines.selectAll('line')
+    .data(links)
+    .enter()
+    .append('line')
+      .attr('x1', d => d.coordinates[0][0])
+      .attr('x2', d => d.coordinates[0][1])
+      .attr('y1', d => d.coordinates[1][0])
+      .attr('y2', d => d.coordinates[1][1])
+      .attr('id', function(d, i) {return "line" + i})
+      .attr("stroke", "steelblue")
+
+
+    lines.selectAll("line").style("opacity", 0)
+
+    d3.selectAll("line").style("opacity", "1")
+    d3.selectAll("line").each(function(d, i) {
+      let totalLength = d3.select("#line" + i).node().getTotalLength();
+      d3.select("#line" + i).attr("stroke-dasharray", totalLength + " " + totalLength)
+        .attr("stroke-dashoffset", totalLength)
+        .transition()
+        .duration(500)
+        .delay(220 * i)
+        .ease(d3.easeLinear)
+        .attr("stroke-dashoffset", 0)
+        .style("stroke-width", 3)
+    })
+
+  </script>
+</body>
+</html>
